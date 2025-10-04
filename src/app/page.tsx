@@ -71,7 +71,6 @@ export default function Home() {
     setLoading(true);
     setError('');
 
-    // Check if offline and load cached data
     if (!isOnline()) {
       const cached = getCachedWeatherData(city);
       if (cached) {
@@ -107,7 +106,6 @@ export default function Home() {
       setAlerts(result.data.alerts || []);
       updateBackground(result.data.current);
 
-      // Cache the data for offline use
       cacheWeatherData(city, result.data);
 
       const userId = getUserId();
@@ -122,7 +120,6 @@ export default function Home() {
     } catch (err: any) {
       setError(err.message || 'Failed to fetch weather');
       
-      // Try to load cached data on error
       const cached = getCachedWeatherData(city);
       if (cached) {
         setWeather(cached.current);
@@ -144,7 +141,6 @@ export default function Home() {
     setLoading(true);
     setError('');
 
-    // Check if offline
     if (!isOnline()) {
       setError('No internet connection. Please try again later.');
       setLoading(false);
@@ -165,7 +161,6 @@ export default function Home() {
       setAlerts(result.data.alerts || []);
       updateBackground(result.data.current);
 
-      // Cache the data
       cacheWeatherData(result.data.current.name, result.data);
 
       const userId = getUserId();
@@ -196,20 +191,21 @@ export default function Home() {
   }
 
   return (
-    <main className={`h-screen bg-gradient-to-br ${bgGradient} transition-all duration-1000 ease-in-out overflow-hidden`}>
+    <main className={`min-h-screen bg-gradient-to-br ${bgGradient} transition-all duration-1000 ease-in-out`}>
       <ThemeToggle />
       <OfflineIndicator />
       
-      <div className="h-full flex flex-col px-3 py-2">
+      {/* FULL-WIDTH CONTAINER */}
+      <div className="min-h-screen flex flex-col px-2 py-2 max-w-[2000px] mx-auto">
         
-        {/* Header */}
-        <div className="text-center mb-1.5">
-          <h1 className="text-xl font-thin text-white tracking-tight">CloudCast</h1>
+        {/* Compact Header */}
+        <div className="text-center mb-2">
+          <h1 className="text-2xl font-thin text-white tracking-tight">CloudCast</h1>
           <p className="text-white/70 font-light text-xs">Your elegant weather companion</p>
         </div>
 
-        {/* Search Bar */}
-        <div className="w-full max-w-xl mx-auto mb-2">
+        {/* Compact Search Bar */}
+        <div className="w-full max-w-2xl mx-auto mb-2">
           <SearchBar onSearch={fetchWeather} isLoading={loading} />
         </div>
 
@@ -232,67 +228,57 @@ export default function Home() {
           </div>
         )}
 
-        {/* Main Content Grid */}
+        {/* MAIN CONTENT - 3 COLUMN LAYOUT FOR LARGE SCREENS */}
         {!loading && weather && (
-          <div className="flex-1 overflow-hidden">
-            <div className="h-full grid grid-cols-1 xl:grid-cols-12 gap-3 max-w-[1800px] mx-auto">
+          <div className="flex-1 grid grid-cols-1 xl:grid-cols-12 gap-2">
+            
+            {/* LEFT COLUMN - Main Weather (30%) */}
+            <div className="xl:col-span-4 flex flex-col gap-2 overflow-y-auto custom-scrollbar">
+              {/* Alerts */}
+              {alerts && alerts.length > 0 && <WeatherAlerts alerts={alerts} />}
               
-              {/* LEFT COLUMN */}
-              <div className="xl:col-span-5 flex flex-col gap-2 h-full overflow-y-auto custom-scrollbar pr-3">
-                {/* Severe Weather Alerts */}
-                {alerts && alerts.length > 0 && <WeatherAlerts alerts={alerts} />}
-                
-                {/* Error/Warning Banner (if using cached data) */}
-                {error && weather && (
-                  <div className="backdrop-blur-xl bg-yellow-500/20 rounded-2xl p-2 border border-yellow-400/30">
-                    <p className="text-yellow-200 text-xs text-center">{error}</p>
-                  </div>
-                )}
-                
-                {/* Main Weather Card */}
-                <WeatherCard weather={weather} unit={unit} onToggleUnit={() => setUnit(u => u === 'C' ? 'F' : 'C')} />
-                
-                {/* Favorites */}
-                <FavoriteCities currentCity={weather.name} onCitySelect={fetchWeather} />
-              </div>
-
-              {/* RIGHT COLUMN */}
-              <div className="xl:col-span-7 flex flex-col gap-2 h-full overflow-y-auto custom-scrollbar pr-3">
-                {/* Rain Alert */}
-                <RainAlert hourly={hourly} />
-                
-                {/* Hourly Forecast */}
-                {hourly && hourly.length > 0 && <HourlyForecast hourly={hourly} unit={unit} />}
-                
-                {/* Two-Column Grid for Compact Features */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
-                  {/* UV & Heat Index */}
-                  <UVHeatIndex uvi={uvi} temp={weather.main.temp} humidity={weather.main.humidity} />
-                  
-                  {/* Air Quality with Pollutants */}
-                  {aqi && <AirQuality aqi={aqi} components={aqiComponents} />}
-                  
-                  {/* Wind Map */}
-                  <WindMap 
-                    windSpeed={weather.wind.speed} 
-                    windDeg={weather.wind.deg} 
-                    windGust={weather.wind.gust} 
-                  />
-                  
-                  {/* Sun Times */}
-                  <SunTimes sunrise={weather.sys.sunrise} sunset={weather.sys.sunset} />
+              {/* Cache Warning */}
+              {error && weather && (
+                <div className="backdrop-blur-xl bg-yellow-500/20 rounded-xl p-2 border border-yellow-400/30">
+                  <p className="text-yellow-200 text-xs text-center">{error}</p>
                 </div>
-                
-                {/* Weather Radar - Full Width */}
-                <WeatherRadar 
-                  lat={weather.coord.lat} 
-                  lon={weather.coord.lon} 
-                  cityName={weather.name} 
-                />
-                
-                {/* 5-Day Forecast */}
-                {forecast && forecast.length > 0 && <ForecastCard forecast={forecast} unit={unit} />}
+              )}
+              
+              {/* Main Weather */}
+              <WeatherCard weather={weather} unit={unit} onToggleUnit={() => setUnit(u => u === 'C' ? 'F' : 'C')} />
+              
+              {/* Favorites */}
+              <FavoriteCities currentCity={weather.name} onCitySelect={fetchWeather} />
+            </div>
+
+            {/* MIDDLE COLUMN - Hourly + Details (35%) */}
+            <div className="xl:col-span-4 flex flex-col gap-2 overflow-y-auto custom-scrollbar">
+              {/* Rain Alert */}
+              <RainAlert hourly={hourly} />
+              
+              {/* Hourly Forecast */}
+              {hourly && hourly.length > 0 && <HourlyForecast hourly={hourly} unit={unit} />}
+              
+              {/* UV & Wind in 2-column grid */}
+              <div className="grid grid-cols-2 gap-2">
+                <UVHeatIndex uvi={uvi} temp={weather.main.temp} humidity={weather.main.humidity} />
+                <AirQuality aqi={aqi} components={aqiComponents} />
               </div>
+              
+              {/* Wind & Sun Times */}
+              <div className="grid grid-cols-2 gap-2">
+                <WindMap windSpeed={weather.wind.speed} windDeg={weather.wind.deg} windGust={weather.wind.gust} />
+                <SunTimes sunrise={weather.sys.sunrise} sunset={weather.sys.sunset} />
+              </div>
+            </div>
+
+            {/* RIGHT COLUMN - Radar + Forecast (35%) */}
+            <div className="xl:col-span-4 flex flex-col gap-2 overflow-y-auto custom-scrollbar">
+              {/* Weather Radar */}
+              <WeatherRadar lat={weather.coord.lat} lon={weather.coord.lon} cityName={weather.name} />
+              
+              {/* 5-Day Forecast */}
+              {forecast && forecast.length > 0 && <ForecastCard forecast={forecast} unit={unit} />}
             </div>
           </div>
         )}
