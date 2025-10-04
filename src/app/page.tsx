@@ -2,18 +2,26 @@
 import { useState, useEffect } from 'react';
 import SearchBar from '@/components/SearchBar';
 import WeatherCard from '@/components/WeatherCard';
-import ThemeToggle from '@/components/ThemeToggle'; // Add this import
+import ThemeToggle from '@/components/ThemeToggle';
+import ForecastCard from '@/components/ForecastCard';
+import AirQuality from '@/components/AirQuality';
+import SunTimes from '@/components/SunTimes';
+import FavoriteCities from '@/components/FavoriteCities';
+import WeatherAlerts from '@/components/WeatherAlerts';
 import { supabase, saveLastCity, getLastCity } from '@/lib/supabase';
 import { getUserId, getBackgroundGradient } from '@/lib/weatherUtils';
 
 export default function Home() {
   const [weather, setWeather] = useState(null);
+  const [forecast, setForecast] = useState([]);
+  const [aqi, setAqi] = useState(null);
+  const [alerts, setAlerts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [unit, setUnit] = useState('C');
   const [bgGradient, setBgGradient] = useState('from-blue-400 via-indigo-400 to-purple-500');
 
-  // Load last city or request geolocation on mount
+  // ... (keep all your existing functions)
   useEffect(() => {
     async function initWeather() {
       try {
@@ -28,29 +36,19 @@ export default function Home() {
       } catch (err) {
         console.error('Error loading last city:', err);
       }
-      
-      // If no saved city, request geolocation
       requestGeolocation();
     }
-
     initWeather();
   }, []);
-
-
-  
 
   function requestGeolocation() {
     if ('geolocation' in navigator) {
       setLoading(true);
       navigator.geolocation.getCurrentPosition(
         async (position) => {
-          await fetchWeatherByCoords(
-            position.coords.latitude,
-            position.coords.longitude
-          );
+          await fetchWeatherByCoords(position.coords.latitude, position.coords.longitude);
         },
         (err) => {
-          console.log('Geolocation error:', err.message);
           setError('Location access denied. Please search for a city manually.');
           setLoading(false);
         }
@@ -67,16 +65,20 @@ export default function Home() {
       const response = await fetch(`/api/weather?city=${encodeURIComponent(city)}`);
       const result = await response.json();
       if (!result.success) throw new Error(result.error);
-      setWeather(result.data);
-      updateBackground(result.data);
+      
+      setWeather(result.data.current);
+      setForecast(result.data.forecast || []);
+      setAqi(result.data.aqi);
+      setAlerts(result.data.alerts || []);
+      updateBackground(result.data.current);
 
       const userId = getUserId();
       if (userId) {
         await saveLastCity(userId, {
-          name: result.data.name,
-          country: result.data.sys.country,
-          lat: result.data.coord.lat,
-          lon: result.data.coord.lon,
+          name: result.data.current.name,
+          country: result.data.current.sys.country,
+          lat: result.data.current.coord.lat,
+          lon: result.data.current.coord.lon,
         });
       }
     } catch (err: any) {
@@ -93,16 +95,20 @@ export default function Home() {
       const response = await fetch(`/api/weather?lat=${lat}&lon=${lon}`);
       const result = await response.json();
       if (!result.success) throw new Error(result.error);
-      setWeather(result.data);
-      updateBackground(result.data);
+      
+      setWeather(result.data.current);
+      setForecast(result.data.forecast || []);
+      setAqi(result.data.aqi);
+      setAlerts(result.data.alerts || []);
+      updateBackground(result.data.current);
 
       const userId = getUserId();
       if (userId) {
         await saveLastCity(userId, {
-          name: result.data.name,
-          country: result.data.sys.country,
-          lat: result.data.coord.lat,
-          lon: result.data.coord.lon,
+          name: result.data.current.name,
+          country: result.data.current.sys.country,
+          lat: result.data.current.coord.lat,
+          lon: result.data.current.coord.lon,
         });
       }
     } catch (err: any) {
@@ -124,44 +130,67 @@ export default function Home() {
   }
 
   return (
-    <main className={`min-h-screen bg-gradient-to-br ${bgGradient} transition-all duration-1000 ease-in-out`}>
-      {/* Add Theme Toggle Button */}
+    <main className={`min-h-screen bg-gradient-to-br ${bgGradient} transition-all duration-1000 ease-in-out overflow-hidden`}>
       <ThemeToggle />
       
-      <div className="container mx-auto px-4 py-8 sm:py-12 animate-fade-in">
-        <header className="text-center mb-8 sm:mb-12">
-          <h1 className="text-4xl sm:text-5xl font-thin text-white mb-2 tracking-tight">
-            CloudCast
-          </h1>
-          <p className="text-white/70 font-light text-sm sm:text-base">
-            Your elegant weather companion
-          </p>
-        </header>
+      <div className="h-screen flex flex-col p-4">
+        
+        {/* Header */}
+        <div className="text-center mb-3">
+          <h1 className="text-3xl font-thin text-white mb-0.5 tracking-tight">CloudCast</h1>
+          <p className="text-white/70 font-light text-xs">Your elegant weather companion</p>
+        </div>
 
-        <SearchBar onSearch={fetchWeather} isLoading={loading} />
+        {/* Search Bar - Full Width */}
+        <div className="w-full max-w-2xl mx-auto mb-3">
+          <SearchBar onSearch={fetchWeather} isLoading={loading} />
+        </div>
 
+        {/* Loading/Error States */}
         {loading && (
-          <div className="text-center animate-pulse">
-            <div className="inline-block w-12 h-12 border-4 border-white/30 border-t-white rounded-full animate-spin" />
-            <p className="text-white/70 mt-4 font-light text-sm sm:text-base">
-              Getting your location...
-            </p>
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-center">
+              <div className="inline-block w-10 h-10 border-4 border-white/30 border-t-white rounded-full animate-spin" />
+              <p className="text-white/70 mt-3 font-light text-sm">Getting your location...</p>
+            </div>
           </div>
         )}
 
         {error && (
-          <div className="max-w-2xl mx-auto backdrop-blur-xl bg-red-500/20 rounded-2xl p-4 sm:p-6 border border-red-300/30 animate-fade-in">
-            <p className="text-white text-center text-sm sm:text-base">{error}</p>
+          <div className="flex-1 flex items-center justify-center">
+            <div className="backdrop-blur-xl bg-red-500/20 rounded-2xl p-4 border border-red-300/30 max-w-md">
+              <p className="text-white text-center text-sm">{error}</p>
+            </div>
           </div>
         )}
 
+        {/* Main Content Grid - PROPERLY ALIGNED */}
         {!loading && weather && (
-          <div className="animate-fade-in">
-            <WeatherCard
-              weather={weather}
-              unit={unit}
-              onToggleUnit={() => setUnit(u => u === 'C' ? 'F' : 'C')}
-            />
+          <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-4 overflow-hidden max-w-6xl mx-auto w-full">
+            
+            {/* LEFT COLUMN - Main Weather + Favorites */}
+            <div className="flex flex-col gap-3 h-full overflow-y-auto custom-scrollbar pr-2">
+              {/* Weather Alerts */}
+              {alerts && alerts.length > 0 && <WeatherAlerts alerts={alerts} />}
+              
+              {/* Main Weather Card */}
+              <WeatherCard weather={weather} unit={unit} onToggleUnit={() => setUnit(u => u === 'C' ? 'F' : 'C')} />
+              
+              {/* Favorites */}
+              <FavoriteCities currentCity={weather.name} onCitySelect={fetchWeather} />
+            </div>
+
+            {/* RIGHT COLUMN - Additional Features */}
+            <div className="flex flex-col gap-3 h-full overflow-y-auto custom-scrollbar pr-2">
+              {/* 5-Day Forecast */}
+              {forecast && forecast.length > 0 && <ForecastCard forecast={forecast} unit={unit} />}
+              
+              {/* Sun Times */}
+              <SunTimes sunrise={weather.sys.sunrise} sunset={weather.sys.sunset} />
+              
+              {/* Air Quality */}
+              {aqi && <AirQuality aqi={aqi} />}
+            </div>
           </div>
         )}
       </div>
