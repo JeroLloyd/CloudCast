@@ -1,63 +1,74 @@
-'use client';
-import WeatherIcon from './WeatherIcon';
-import AdviceMessage from './AdviceMessage';
+import { getWeatherAdvice } from '@/lib/weatherUtils';
 
 export default function WeatherCard({ weather, unit, onToggleUnit }) {
-  if (!weather) return null;
-
   const temp = unit === 'C' 
     ? Math.round(weather.main.temp - 273.15) 
     : Math.round((weather.main.temp - 273.15) * 9/5 + 32);
 
   return (
-    <div className="backdrop-blur-2xl bg-white/10 rounded-2xl p-3 border border-white/20 shadow-2xl">
-      
-      {/* Location */}
-      <div className="text-center mb-2">
-        <h2 className="text-xl font-light text-white">{weather.name}</h2>
-        <p className="text-white/70 text-xs font-light">{weather.sys.country}</p>
-      </div>
+    <div className="backdrop-blur-2xl bg-white/15 rounded-2xl p-4 border border-white/25 shadow-xl">
+      {/* City Name */}
+      <h2 className="text-white text-2xl font-light mb-1 text-readable">
+        {weather.name}
+      </h2>
+      <p className="text-white/95 text-sm text-readable-subtle">
+        {weather.sys.country}
+      </p>
 
-      {/* Temperature & Icon - Side by Side */}
-      <div className="flex items-center justify-center gap-4 mb-2">
-        <WeatherIcon condition={weather.weather[0].main} size="medium" />
-        <div onClick={onToggleUnit} className="cursor-pointer group">
-          <div className="text-5xl font-thin text-white transition-transform group-hover:scale-105">
-            {temp}°{unit}
-          </div>
-          <p className="text-white/60 text-xs text-center">tap to switch</p>
-        </div>
+      {/* Temperature */}
+      <div className="text-6xl font-thin text-white mt-4 mb-2 text-readable-strong">
+        {temp}°{unit}
       </div>
 
       {/* Weather description */}
-      <p className="text-center text-base font-light text-white/90 mb-2 capitalize">
+      <p className="text-white/90 text-base capitalize mb-3 text-readable-subtle">
         {weather.weather[0].description}
       </p>
 
-      {/* Weather details grid */}
-      <div className="grid grid-cols-4 gap-1.5">
-        <WeatherDetail 
+      {/* Toggle button */}
+      <button
+        onClick={onToggleUnit}
+        className="text-white/90 text-sm px-3 py-1 bg-white/15 rounded-lg 
+                 hover:bg-white/25 transition-all text-readable-subtle"
+      >
+        tap to switch
+      </button>
+
+      {/* Stats grid */}
+      <div className="grid grid-cols-4 gap-3 mt-4">
+        <StatItem 
           label="Feels" 
-          value={`${unit === 'C' 
-            ? Math.round(weather.main.feels_like - 273.15) 
-            : Math.round((weather.main.feels_like - 273.15) * 9/5 + 32)}°`} 
+          value={`${Math.round(weather.main.feels_like - 273.15)}°`} 
         />
-        <WeatherDetail label="Humid" value={`${weather.main.humidity}%`} />
-        <WeatherDetail label="Wind" value={`${Math.round(weather.wind.speed * 3.6)}`} />
-        <WeatherDetail label="Press" value={`${weather.main.pressure}`} />
+        <StatItem 
+          label="Humid" 
+          value={`${weather.main.humidity}%`} 
+        />
+        <StatItem 
+          label="Wind" 
+          value={`${Math.round(weather.wind.speed)}`} 
+        />
+        <StatItem 
+          label="Press" 
+          value={weather.main.pressure} 
+        />
       </div>
 
-      {/* Advice */}
-      <AdviceMessage weatherMain={weather.weather[0].main} temp={weather.main.temp} />
+      {/* Weather advice */}
+      <div className="mt-4 p-2 bg-white/18 rounded-lg border border-white/15">
+        <p className="text-white/85 text-xs text-center text-readable-subtle">
+          💡 {getWeatherAdvice(weather.weather[0].main, weather.main.temp)}
+        </p>
+      </div>
     </div>
   );
 }
 
-function WeatherDetail({ label, value }) {
+function StatItem({ label, value }) {
   return (
-    <div className="backdrop-blur-xl bg-white/5 rounded-lg p-1.5 border border-white/10 text-center">
-      <p className="text-white/60 text-xs font-light">{label}</p>
-      <p className="text-white text-sm font-light">{value}</p>
+    <div className="text-center">
+      <p className="text-white/70 text-xs mb-1 text-readable-subtle">{label}</p>
+      <p className="text-white text-sm font-medium text-readable-subtle">{value}</p>
     </div>
   );
 }

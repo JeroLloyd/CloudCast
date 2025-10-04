@@ -30,7 +30,7 @@ export default function WeatherRadar({
   const currentLayer = layers.find(l => l.value === layer);
 
   return (
-    <div className="backdrop-blur-xl bg-white/10 rounded-2xl p-3 border border-white/20">
+    <div className="backdrop-blur-2xl bg-white/18 rounded-2xl p-3 border border-white/30">
       {/* Header */}
       <div className="flex items-center justify-between mb-2">
         <div>
@@ -45,14 +45,14 @@ export default function WeatherRadar({
         <div className="flex gap-1">
           <button
             onClick={() => setZoom(Math.max(5, zoom - 1))}
-            className="p-1.5 rounded-lg bg-white/10 text-white hover:bg-white/20 transition-all"
+            className="p-1.5 rounded-lg bg-white/18 text-white hover:bg-white/20 transition-all"
             title="Zoom Out"
           >
             <MagnifyingGlassMinusIcon className="w-4 h-4" />
           </button>
           <button
             onClick={() => setZoom(Math.min(12, zoom + 1))}
-            className="p-1.5 rounded-lg bg-white/10 text-white hover:bg-white/20 transition-all"
+            className="p-1.5 rounded-lg bg-white/18 text-white hover:bg-white/20 transition-all"
             title="Zoom In"
           >
             <MagnifyingGlassPlusIcon className="w-4 h-4" />
@@ -69,7 +69,7 @@ export default function WeatherRadar({
             className={`flex-shrink-0 px-3 py-2 rounded-xl text-xs transition-all ${
               layer === l.value 
                 ? 'bg-blue-500/40 text-white border border-blue-400/50 shadow-lg' 
-                : 'bg-white/10 text-white/70 hover:bg-white/20 border border-white/20'
+                : 'bg-white/18 text-white/70 hover:bg-white/20 border border-white/30'
             }`}
           >
             <div className="flex items-center gap-1.5">
@@ -81,7 +81,7 @@ export default function WeatherRadar({
       </div>
 
       {/* Windy Map */}
-      <div className="relative rounded-xl overflow-hidden border border-white/20 bg-black/20">
+      <div className="relative rounded-xl overflow-hidden border border-white/30 bg-black/20">
         <iframe
           key={`${layer}-${zoom}`}
           src={getWindyUrl()}

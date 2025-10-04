@@ -31,6 +31,66 @@ body {
   box-sizing: border-box;
 }
 
+/* ============================================
+   TEXT READABILITY ENHANCEMENTS
+   ============================================ */
+
+/* Strong text shadow for main headings */
+.text-readable {
+  text-shadow: 
+    0 2px 12px rgba(0, 0, 0, 0.5),
+    0 1px 6px rgba(0, 0, 0, 0.4),
+    0 0 3px rgba(0, 0, 0, 0.3);
+}
+
+/* Subtle shadow for body text */
+.text-readable-subtle {
+  text-shadow: 
+    0 1px 8px rgba(0, 0, 0, 0.35),
+    0 1px 4px rgba(0, 0, 0, 0.25);
+}
+
+/* Extra strong shadow for temperatures/large numbers */
+.text-readable-strong {
+  text-shadow: 
+    0 3px 16px rgba(0, 0, 0, 0.6),
+    0 2px 8px rgba(0, 0, 0, 0.5),
+    0 1px 4px rgba(0, 0, 0, 0.4);
+}
+
+/* Improved card backgrounds - darker for better contrast */
+.glass-readable {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.2) 0%,
+    rgba(255, 255, 255, 0.15) 100%
+  );
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+/* Dark overlay for better text contrast */
+.card-dark-overlay {
+  position: relative;
+}
+
+.card-dark-overlay::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    rgba(0, 0, 0, 0.15) 0%,
+    rgba(0, 0, 0, 0.1) 100%
+  );
+  border-radius: inherit;
+  pointer-events: none;
+}
+
 /* Weather icon float animation */
 @keyframes float {
   0%, 100% {
@@ -66,33 +126,88 @@ body {
   transition: all 1s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Glassmorphism effects */
+/* Glassmorphism effects with better contrast */
 @supports (backdrop-filter: blur(10px)) {
   .backdrop-blur-xl {
     backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
   }
   
   .backdrop-blur-2xl {
     backdrop-filter: blur(40px);
+    -webkit-backdrop-filter: blur(40px);
   }
 }
 
-/* Custom scrollbar styling */
+/* Enhanced background opacity for better contrast */
+.bg-white\/5 {
+  background-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+.bg-white\/10 {
+  background-color: rgba(255, 255, 255, 0.18) !important;
+}
+
+.bg-white\/15 {
+  background-color: rgba(255, 255, 255, 0.22) !important;
+}
+
+.bg-white\/20 {
+  background-color: rgba(255, 255, 255, 0.28) !important;
+}
+
+/* Stronger borders for definition */
+.border-white\/10 {
+  border-color: rgba(255, 255, 255, 0.25) !important;
+}
+
+.border-white\/20 {
+  border-color: rgba(255, 255, 255, 0.35) !important;
+}
+
+.border-white\/30 {
+  border-color: rgba(255, 255, 255, 0.4) !important;
+}
+
+/* Custom scrollbar styling - improved visibility */
 ::-webkit-scrollbar {
   width: 10px;
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.1);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.4);
   border-radius: 5px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.6);
+}
+
+/* Minimal custom scrollbar for components */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.4) transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.4);
+  border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.6);
 }
 
 /* Responsive typography */
@@ -111,11 +226,25 @@ html {
   scroll-behavior: smooth;
 }
 
-/* Focus styles for accessibility */
+/* Enhanced focus styles for accessibility */
 button:focus-visible,
 input:focus-visible {
-  outline: 2px solid rgba(255, 255, 255, 0.5);
+  outline: 2px solid rgba(255, 255, 255, 0.7);
   outline-offset: 2px;
+}
+
+/* Button text readability */
+button {
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+
+button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+button:active {
+  transform: translateY(0);
 }
 
 /* Loading spinner animation */
@@ -167,6 +296,16 @@ input:focus-visible {
   }
 }
 
+/* Input field enhancements */
+input::placeholder {
+  color: rgba(255, 255, 255, 0.7);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+input {
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
 /* ============================================
    DARK MODE ENHANCEMENTS
    ============================================ */
@@ -176,71 +315,85 @@ input:focus-visible {
   background: linear-gradient(to bottom, #0a0a0a, #1a1a2e);
 }
 
-/* Dark mode text color adjustments */
+/* Dark mode text color adjustments with better contrast */
 .dark .text-white {
-  color: #f5f5f5;
+  color: #ffffff;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
 }
 
-.dark .text-white\/70 {
-  color: rgba(245, 245, 245, 0.7);
-}
-
-.dark .text-white\/60 {
-  color: rgba(245, 245, 245, 0.6);
+.dark .text-white\/95 {
+  color: rgba(255, 255, 255, 0.98);
 }
 
 .dark .text-white\/90 {
-  color: rgba(245, 245, 245, 0.9);
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.dark .text-white\/85 {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.dark .text-white\/70 {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.dark .text-white\/60 {
+  color: rgba(255, 255, 255, 0.7);
 }
 
 /* Dark mode glassmorphism adjustments */
 .dark .backdrop-blur-xl {
-  background: rgba(0, 0, 0, 0.3);
+  background: rgba(0, 0, 0, 0.35);
 }
 
 .dark .backdrop-blur-2xl {
-  background: rgba(0, 0, 0, 0.4);
+  background: rgba(0, 0, 0, 0.45);
 }
 
 .dark .bg-white\/10 {
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: rgba(255, 255, 255, 0.12);
 }
 
-.dark .bg-white\/20 {
+.dark .bg-white\/15 {
   background-color: rgba(255, 255, 255, 0.15);
 }
 
+.dark .bg-white\/20 {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
 .dark .bg-white\/5 {
-  background-color: rgba(255, 255, 255, 0.05);
+  background-color: rgba(255, 255, 255, 0.08);
 }
 
 /* Dark mode border adjustments */
 .dark .border-white\/20 {
-  border-color: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.2);
 }
 
 .dark .border-white\/30 {
-  border-color: rgba(255, 255, 255, 0.25);
+  border-color: rgba(255, 255, 255, 0.3);
 }
 
 .dark .border-white\/10 {
-  border-color: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.15);
 }
 
 /* Dark mode placeholder text */
 .dark input::placeholder {
-  color: rgba(245, 245, 245, 0.5);
+  color: rgba(255, 255, 255, 0.6);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
 }
 
 /* Dark mode focus states */
 .dark button:focus-visible,
 .dark input:focus-visible {
-  outline: 2px solid rgba(255, 255, 255, 0.6);
+  outline: 2px solid rgba(255, 255, 255, 0.7);
 }
 
 /* Dark mode hover effects */
 .dark .hover\:bg-white\/20:hover {
-  background-color: rgba(255, 255, 255, 0.2);
+  background-color: rgba(255, 255, 255, 0.25);
 }
 
 /* Dark mode scrollbar */
@@ -249,56 +402,141 @@ input:focus-visible {
 }
 
 .dark ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.3);
 }
 
 .dark ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.4);
-}
-
-/* Dark mode gradient backgrounds - enhance existing gradients */
-.dark .bg-gradient-to-br {
-  filter: brightness(0.8);
+  background: rgba(255, 255, 255, 0.5);
 }
 
 /* Dark mode error messages */
 .dark .bg-red-500\/20 {
-  background-color: rgba(239, 68, 68, 0.25);
+  background-color: rgba(239, 68, 68, 0.3);
 }
 
 .dark .border-red-300\/30 {
-  border-color: rgba(252, 165, 165, 0.3);
+  border-color: rgba(252, 165, 165, 0.35);
 }
 
 /* Theme toggle button dark mode adjustments */
 .dark .fixed.top-6.right-6 {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.25);
 }
 
 .dark .fixed.top-6.right-6:hover {
   background: rgba(255, 255, 255, 0.2);
 }
 
-/* Minimal custom scrollbar */
-.custom-scrollbar {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+/* Reduce motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
-.custom-scrollbar::-webkit-scrollbar {
-  width: 4px;
+/* ============================================
+   ULTRA-DARK MODE FOR MAXIMUM COMFORT
+   ============================================ */
+
+/* Dark semi-transparent backgrounds */
+.bg-white\/5,
+.bg-white\/10,
+.bg-white\/15,
+.bg-white\/20,
+.bg-white\/25,
+.bg-white\/30 {
+  background-color: rgba(0, 0, 0, 0.5) !important;
+  backdrop-filter: blur(40px) !important;
+  -webkit-backdrop-filter: blur(40px) !important;
 }
 
-.custom-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
+/* Even darker for main cards */
+.bg-black\/40 {
+  background-color: rgba(0, 0, 0, 0.4) !important;
 }
 
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 4px;
+.bg-black\/45 {
+  background-color: rgba(0, 0, 0, 0.45) !important;
 }
 
-.custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.3);
+.bg-black\/50 {
+  background-color: rgba(0, 0, 0, 0.5) !important;
+}
+
+.bg-black\/55 {
+  background-color: rgba(0, 0, 0, 0.55) !important;
+}
+
+.bg-black\/60 {
+  background-color: rgba(0, 0, 0, 0.6) !important;
+}
+
+.bg-black\/65 {
+  background-color: rgba(0, 0, 0, 0.65) !important;
+}
+
+/* Brighter borders for contrast against dark bg */
+.border-white\/60 {
+  border-color: rgba(255, 255, 255, 0.6) !important;
+}
+
+.border-white\/70 {
+  border-color: rgba(255, 255, 255, 0.7) !important;
+}
+
+.border-white\/80 {
+  border-color: rgba(255, 255, 255, 0.8) !important;
+}
+
+.border-white\/90 {
+  border-color: rgba(255, 255, 255, 0.9) !important;
+}
+
+/* Text with strong glow for visibility */
+.text-readable {
+  text-shadow: 
+    0 0 20px rgba(255, 255, 255, 0.3),
+    0 3px 16px rgba(0, 0, 0, 0.9),
+    0 2px 10px rgba(0, 0, 0, 0.8);
+  color: #ffffff !important;
+}
+
+.text-readable-subtle {
+  text-shadow: 
+    0 0 15px rgba(255, 255, 255, 0.2),
+    0 2px 12px rgba(0, 0, 0, 0.8);
+  color: #ffffff !important;
+}
+
+.text-readable-strong {
+  text-shadow: 
+    0 0 30px rgba(255, 255, 255, 0.4),
+    0 4px 20px rgba(0, 0, 0, 0.9),
+    0 3px 14px rgba(0, 0, 0, 0.8);
+  color: #ffffff !important;
+  font-weight: 700 !important;
+}
+
+/* Ensure all text is bright white */
+.text-white {
+  color: #ffffff !important;
+}
+
+.text-white\/95,
+.text-white\/90,
+.text-white\/85,
+.text-white\/80 {
+  color: #ffffff !important;
+}
+
+/* Stronger shadows for depth */
+.shadow-xl,
+.shadow-2xl {
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8) !important;
 }

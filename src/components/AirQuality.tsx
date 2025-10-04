@@ -37,7 +37,7 @@ export default function AirQuality({
   ] : [];
 
   return (
-    <div className={`backdrop-blur-xl ${level.bg} rounded-2xl p-3 border border-white/20 animate-fade-in`}>
+    <div className={`backdrop-blur-2xl ${level.bg} rounded-2xl p-3 border border-white/30 animate-fade-in`}>
       <div 
         className="flex items-center justify-between cursor-pointer"
         onClick={() => setExpanded(!expanded)}
@@ -62,11 +62,11 @@ export default function AirQuality({
 
       {/* Expanded Pollutant Details */}
       {expanded && components && (
-        <div className="mt-3 pt-3 border-t border-white/10 grid grid-cols-2 gap-2">
+        <div className="mt-3 pt-3 border-t border-white/25 grid grid-cols-2 gap-2">
           {pollutants.map((pollutant, i) => {
             const isHigh = pollutant.value && pollutant.value > pollutant.safe;
             return (
-              <div key={i} className={`backdrop-blur-lg ${isHigh ? 'bg-red-500/10' : 'bg-white/5'} rounded-lg p-2`}>
+              <div key={i} className={`backdrop-blur-lg ${isHigh ? 'bg-red-500/10' : 'bg-white/15'} rounded-lg p-2`}>
                 <p className="text-white/60 text-xs">{pollutant.name}</p>
                 <p className={`${isHigh ? 'text-red-400' : 'text-white'} text-sm font-light`}>
                   {pollutant.value?.toFixed(1) || 'N/A'}

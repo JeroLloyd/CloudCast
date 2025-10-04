@@ -6,7 +6,6 @@ import ThemeToggle from '@/components/ThemeToggle';
 import ForecastCard from '@/components/ForecastCard';
 import AirQuality from '@/components/AirQuality';
 import SunTimes from '@/components/SunTimes';
-import FavoriteCities from '@/components/FavoriteCities';
 import WeatherAlerts from '@/components/WeatherAlerts';
 import HourlyForecast from '@/components/HourlyForecast';
 import RainAlert from '@/components/RainAlert';
@@ -14,6 +13,9 @@ import UVHeatIndex from '@/components/UVHeatIndex';
 import WeatherRadar from '@/components/WeatherRadar';
 import WindMap from '@/components/WindMap';
 import OfflineIndicator from '@/components/OfflineIndicator';
+import PollenIndex from '@/components/PollenIndex';
+import TravelMode from '@/components/TravelMode';
+import VoiceWeather from '@/components/VoiceWeather';
 import { supabase, saveLastCity, getLastCity } from '@/lib/supabase';
 import { getUserId, getBackgroundGradient } from '@/lib/weatherUtils';
 import { cacheWeatherData, getCachedWeatherData, isOnline } from '@/lib/offlineCache';
@@ -29,7 +31,15 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [unit, setUnit] = useState('C');
-  const [bgGradient, setBgGradient] = useState('from-blue-400 via-indigo-400 to-purple-500');
+  const [bgGradient, setBgGradient] = useState('from-blue-600 via-blue-700 to-indigo-800');
+  const [pollenData, setPollenData] = useState({ 
+    overall: 0, 
+    tree: 0, 
+    grass: 0, 
+    weed: 0,
+    available: false,
+    source: 'unavailable'
+  });
 
   useEffect(() => {
     async function initWeather() {
@@ -81,6 +91,7 @@ export default function Home() {
         setAqi(cached.aqi);
         setAqiComponents(cached.aqiComponents || null);
         setAlerts(cached.alerts || []);
+        setPollenData(cached.pollen || pollenData);
         updateBackground(cached.current);
         setLoading(false);
         setError('Showing cached data (offline mode)');
@@ -104,6 +115,7 @@ export default function Home() {
       setAqi(result.data.aqi);
       setAqiComponents(result.data.aqiComponents || null);
       setAlerts(result.data.alerts || []);
+      setPollenData(result.data.pollen || pollenData);
       updateBackground(result.data.current);
 
       cacheWeatherData(city, result.data);
@@ -129,6 +141,7 @@ export default function Home() {
         setAqi(cached.aqi);
         setAqiComponents(cached.aqiComponents || null);
         setAlerts(cached.alerts || []);
+        setPollenData(cached.pollen || pollenData);
         updateBackground(cached.current);
         setError('Showing cached data (connection error)');
       }
@@ -159,6 +172,7 @@ export default function Home() {
       setAqi(result.data.aqi);
       setAqiComponents(result.data.aqiComponents || null);
       setAlerts(result.data.alerts || []);
+      setPollenData(result.data.pollen || pollenData);
       updateBackground(result.data.current);
 
       cacheWeatherData(result.data.current.name, result.data);
@@ -195,17 +209,17 @@ export default function Home() {
       <ThemeToggle />
       <OfflineIndicator />
       
-      {/* FULL-WIDTH CONTAINER */}
-      <div className="min-h-screen flex flex-col px-2 py-2 max-w-[2000px] mx-auto">
+      {/* OPTIMIZED CONTAINER */}
+      <div className="min-h-screen flex flex-col px-4 py-4 max-w-[1800px] mx-auto">
         
         {/* Compact Header */}
-        <div className="text-center mb-2">
-          <h1 className="text-2xl font-thin text-white tracking-tight">CloudCast</h1>
-          <p className="text-white/70 font-light text-xs">Your elegant weather companion</p>
+        <div className="text-center mb-3">
+          <h1 className="text-3xl font-thin text-white tracking-tight text-readable">CloudCast</h1>
+          <p className="text-white/90 font-light text-sm text-readable-subtle">Your elegant weather companion</p>
         </div>
 
         {/* Compact Search Bar */}
-        <div className="w-full max-w-2xl mx-auto mb-2">
+        <div className="w-full max-w-3xl mx-auto mb-4">
           <SearchBar onSearch={fetchWeather} isLoading={loading} />
         </div>
 
@@ -213,8 +227,8 @@ export default function Home() {
         {loading && (
           <div className="flex-1 flex items-center justify-center">
             <div className="text-center">
-              <div className="inline-block w-10 h-10 border-4 border-white/30 border-t-white rounded-full animate-spin" />
-              <p className="text-white/70 mt-3 font-light text-sm">Getting your location...</p>
+              <div className="inline-block w-12 h-12 border-4 border-white/30 border-t-white rounded-full animate-spin" />
+              <p className="text-white/90 mt-4 font-light text-sm text-readable-subtle">Getting your location...</p>
             </div>
           </div>
         )}
@@ -222,62 +236,56 @@ export default function Home() {
         {/* Error State */}
         {error && !weather && (
           <div className="flex-1 flex items-center justify-center">
-            <div className="backdrop-blur-xl bg-red-500/20 rounded-2xl p-4 border border-red-300/30 max-w-md">
-              <p className="text-white text-center text-sm">{error}</p>
+            <div className="backdrop-blur-3xl bg-red-500/30 rounded-2xl p-6 border border-red-300/50 max-w-md">
+              <p className="text-white text-center text-sm text-readable-subtle">{error}</p>
             </div>
           </div>
         )}
 
-        {/* MAIN CONTENT - 3 COLUMN LAYOUT FOR LARGE SCREENS */}
+        {/* BALANCED 3-COLUMN LAYOUT */}
         {!loading && weather && (
-          <div className="flex-1 grid grid-cols-1 xl:grid-cols-12 gap-2">
+          <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-4 max-h-[calc(100vh-180px)]">
             
-            {/* LEFT COLUMN - Main Weather (30%) */}
-            <div className="xl:col-span-4 flex flex-col gap-2 overflow-y-auto custom-scrollbar">
-              {/* Alerts */}
+            {/* LEFT COLUMN - Main Weather + Travel (30%) */}
+            <div className="flex flex-col gap-4 overflow-y-auto custom-scrollbar pr-2">
               {alerts && alerts.length > 0 && <WeatherAlerts alerts={alerts} />}
               
-              {/* Cache Warning */}
               {error && weather && (
-                <div className="backdrop-blur-xl bg-yellow-500/20 rounded-xl p-2 border border-yellow-400/30">
-                  <p className="text-yellow-200 text-xs text-center">{error}</p>
+                <div className="backdrop-blur-3xl bg-yellow-500/30 rounded-xl p-3 border border-yellow-400/50">
+                  <p className="text-yellow-100 text-xs text-center text-readable-subtle">{error}</p>
                 </div>
               )}
               
-              {/* Main Weather */}
               <WeatherCard weather={weather} unit={unit} onToggleUnit={() => setUnit(u => u === 'C' ? 'F' : 'C')} />
               
-              {/* Favorites */}
-              <FavoriteCities currentCity={weather.name} onCitySelect={fetchWeather} />
+              <TravelMode onSelectCity={fetchWeather} />
+              
+              <VoiceWeather weather={weather} unit={unit} />
             </div>
 
             {/* MIDDLE COLUMN - Hourly + Details (35%) */}
-            <div className="xl:col-span-4 flex flex-col gap-2 overflow-y-auto custom-scrollbar">
-              {/* Rain Alert */}
+            <div className="flex flex-col gap-4 overflow-y-auto custom-scrollbar pr-2">
               <RainAlert hourly={hourly} />
               
-              {/* Hourly Forecast */}
               {hourly && hourly.length > 0 && <HourlyForecast hourly={hourly} unit={unit} />}
               
-              {/* UV & Wind in 2-column grid */}
-              <div className="grid grid-cols-2 gap-2">
+              {pollenData.available && <PollenIndex data={pollenData} />}
+              
+              <div className="grid grid-cols-2 gap-4">
                 <UVHeatIndex uvi={uvi} temp={weather.main.temp} humidity={weather.main.humidity} />
                 <AirQuality aqi={aqi} components={aqiComponents} />
               </div>
               
-              {/* Wind & Sun Times */}
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-4">
                 <WindMap windSpeed={weather.wind.speed} windDeg={weather.wind.deg} windGust={weather.wind.gust} />
                 <SunTimes sunrise={weather.sys.sunrise} sunset={weather.sys.sunset} />
               </div>
             </div>
 
             {/* RIGHT COLUMN - Radar + Forecast (35%) */}
-            <div className="xl:col-span-4 flex flex-col gap-2 overflow-y-auto custom-scrollbar">
-              {/* Weather Radar */}
+            <div className="flex flex-col gap-4 overflow-y-auto custom-scrollbar pr-2">
               <WeatherRadar lat={weather.coord.lat} lon={weather.coord.lon} cityName={weather.name} />
               
-              {/* 5-Day Forecast */}
               {forecast && forecast.length > 0 && <ForecastCard forecast={forecast} unit={unit} />}
             </div>
           </div>
@@ -286,3 +294,4 @@ export default function Home() {
     </main>
   );
 }
+

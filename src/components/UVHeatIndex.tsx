@@ -31,7 +31,7 @@ export default function UVHeatIndex({ uvi, temp, humidity }: UVHeatProps) {
   const heatWarning = heatIndex > 32; // Heat index > 32°C is dangerous
 
   return (
-    <div className="backdrop-blur-xl bg-white/10 rounded-2xl p-3 border border-white/20">
+    <div className="backdrop-blur-2xl bg-white/18 rounded-2xl p-3 border border-white/30">
       <h3 className="text-white font-light text-sm mb-2">Health & Safety</h3>
       
       {/* UV Index */}
@@ -50,7 +50,7 @@ export default function UVHeatIndex({ uvi, temp, humidity }: UVHeatProps) {
       </div>
 
       {/* Heat Index */}
-      <div className={`${heatWarning ? 'bg-red-500/20 border border-red-400/40' : 'bg-white/5'} rounded-xl p-2`}>
+      <div className={`${heatWarning ? 'bg-red-500/20 border border-red-400/40' : 'bg-white/15'} rounded-xl p-2`}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <FireIcon className={`w-6 h-6 ${heatWarning ? 'text-red-400' : 'text-orange-400'}`} />

@@ -23,7 +23,7 @@ export default function OfflineIndicator() {
   if (isOnline) return null;
 
   return (
-    <div className="fixed top-16 left-1/2 -translate-x-1/2 backdrop-blur-xl bg-orange-500/20 border border-orange-400/40 rounded-full px-4 py-2 z-50 animate-pulse">
+    <div className="fixed top-16 left-1/2 -translate-x-1/2 backdrop-blur-2xl bg-orange-500/20 border border-orange-400/40 rounded-full px-4 py-2 z-50 animate-pulse">
       <div className="flex items-center gap-2">
         <SignalSlashIcon className="w-5 h-5 text-orange-400" />
         <p className="text-white text-sm font-light">Offline - Showing cached data</p>

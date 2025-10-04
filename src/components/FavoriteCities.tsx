@@ -31,7 +31,7 @@ export default function FavoriteCities({ currentCity, onCitySelect }: { currentC
     <div className="mt-3 animate-fade-in">
       <button
         onClick={() => toggleFavorite(currentCity)}
-        className="backdrop-blur-xl bg-white/10 hover:bg-white/20 border border-white/20 
+        className="backdrop-blur-2xl bg-white/18 hover:bg-white/20 border border-white/30 
                    rounded-xl px-3 py-2 flex items-center gap-2 transition-all hover:scale-105 text-sm"
       >
         {isFavorite ? (
@@ -52,7 +52,7 @@ export default function FavoriteCities({ currentCity, onCitySelect }: { currentC
               <button
                 key={city}
                 onClick={() => onCitySelect(city)}
-                className="backdrop-blur-xl bg-white/5 hover:bg-white/15 border border-white/20 
+                className="backdrop-blur-2xl bg-white/15 hover:bg-white/15 border border-white/30 
                            rounded-full px-2.5 py-1 text-white text-xs transition-all hover:scale-105 font-light"
               >
                 {city}

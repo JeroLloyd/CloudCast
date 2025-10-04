@@ -30,12 +30,12 @@ export default function WindMap({
   const strength = getWindStrength(speedKmh);
 
   return (
-    <div className={`backdrop-blur-xl ${strength.bg} rounded-2xl p-3 border border-white/20`}>
+    <div className={`backdrop-blur-2xl ${strength.bg} rounded-2xl p-3 border border-white/30`}>
       <h3 className="text-white font-light text-sm mb-3">Wind Conditions</h3>
       
       <div className="flex items-center justify-between">
         {/* Wind Compass */}
-        <div className="relative w-24 h-24 rounded-full bg-white/5 border-2 border-white/20">
+        <div className="relative w-24 h-24 rounded-full bg-white/15 border-2 border-white/30">
           {/* Compass directions */}
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="text-white/40 text-xs font-light absolute top-1">N</div>

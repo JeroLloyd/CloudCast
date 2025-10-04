@@ -26,11 +26,11 @@ export default function HourlyForecast({ hourly, unit }: { hourly: HourlyData[],
   if (!hourly || hourly.length === 0) return null;
 
   return (
-    <div className="backdrop-blur-xl bg-white/10 rounded-2xl p-3 border border-white/20">
+    <div className="backdrop-blur-2xl bg-white/18 rounded-2xl p-3 border border-white/30">
       <h3 className="text-white font-light text-sm mb-2">Hourly Forecast (Next 24h)</h3>
       <div className="flex gap-2 overflow-x-auto custom-scrollbar pb-2">
         {hourly.slice(0, 24).map((hour, i) => (
-          <div key={i} className="flex-shrink-0 text-center backdrop-blur-lg bg-white/5 rounded-xl p-2 min-w-[70px]">
+          <div key={i} className="flex-shrink-0 text-center backdrop-blur-lg bg-white/15 rounded-xl p-2 min-w-[70px]">
             <p className="text-white/70 text-xs mb-1 font-light">
               {i === 0 ? 'Now' : getHourTime(hour.dt)}
             </p>

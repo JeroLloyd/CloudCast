@@ -18,7 +18,7 @@ export default function RainAlert({ hourly }: RainAlertProps) {
   if (!upcomingRain && !hasThunderstorm) return null;
 
   return (
-    <div className="backdrop-blur-xl bg-blue-500/20 border-2 border-blue-400/40 rounded-2xl p-3 animate-pulse">
+    <div className="backdrop-blur-2xl bg-blue-500/20 border-2 border-blue-400/40 rounded-2xl p-3 animate-pulse">
       <div className="flex items-start gap-2">
         {hasThunderstorm ? (
           <BoltIcon className="w-6 h-6 text-yellow-400 flex-shrink-0 animate-bounce" />

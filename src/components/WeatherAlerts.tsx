@@ -20,7 +20,7 @@ export default function WeatherAlerts({ alerts }: { alerts: any[] }) {
         return (
           <div 
             key={i} 
-            className={`backdrop-blur-xl ${colors.bg} border-2 ${colors.border} rounded-2xl p-3 animate-pulse`}
+            className={`backdrop-blur-2xl ${colors.bg} border-2 ${colors.border} rounded-2xl p-3 animate-pulse`}
           >
             <div className="flex items-start gap-2">
               {severity === 'extreme' ? (
