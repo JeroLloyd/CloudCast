@@ -8,20 +8,29 @@ import AirQuality from '@/components/AirQuality';
 import SunTimes from '@/components/SunTimes';
 import FavoriteCities from '@/components/FavoriteCities';
 import WeatherAlerts from '@/components/WeatherAlerts';
+import HourlyForecast from '@/components/HourlyForecast';
+import RainAlert from '@/components/RainAlert';
+import UVHeatIndex from '@/components/UVHeatIndex';
+import WeatherRadar from '@/components/WeatherRadar';
+import WindMap from '@/components/WindMap';
+import OfflineIndicator from '@/components/OfflineIndicator';
 import { supabase, saveLastCity, getLastCity } from '@/lib/supabase';
 import { getUserId, getBackgroundGradient } from '@/lib/weatherUtils';
+import { cacheWeatherData, getCachedWeatherData, isOnline } from '@/lib/offlineCache';
 
 export default function Home() {
   const [weather, setWeather] = useState(null);
   const [forecast, setForecast] = useState([]);
+  const [hourly, setHourly] = useState([]);
+  const [uvi, setUvi] = useState(0);
   const [aqi, setAqi] = useState(null);
+  const [aqiComponents, setAqiComponents] = useState(null);
   const [alerts, setAlerts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [unit, setUnit] = useState('C');
   const [bgGradient, setBgGradient] = useState('from-blue-400 via-indigo-400 to-purple-500');
 
-  // ... (keep all your existing functions)
   useEffect(() => {
     async function initWeather() {
       try {
@@ -61,6 +70,29 @@ export default function Home() {
   async function fetchWeather(city: string) {
     setLoading(true);
     setError('');
+
+    // Check if offline and load cached data
+    if (!isOnline()) {
+      const cached = getCachedWeatherData(city);
+      if (cached) {
+        setWeather(cached.current);
+        setForecast(cached.forecast || []);
+        setHourly(cached.hourly || []);
+        setUvi(cached.uvi || 0);
+        setAqi(cached.aqi);
+        setAqiComponents(cached.aqiComponents || null);
+        setAlerts(cached.alerts || []);
+        updateBackground(cached.current);
+        setLoading(false);
+        setError('Showing cached data (offline mode)');
+        return;
+      } else {
+        setError('No internet connection and no cached data available.');
+        setLoading(false);
+        return;
+      }
+    }
+
     try {
       const response = await fetch(`/api/weather?city=${encodeURIComponent(city)}`);
       const result = await response.json();
@@ -68,9 +100,15 @@ export default function Home() {
       
       setWeather(result.data.current);
       setForecast(result.data.forecast || []);
+      setHourly(result.data.hourly || []);
+      setUvi(result.data.uvi || 0);
       setAqi(result.data.aqi);
+      setAqiComponents(result.data.aqiComponents || null);
       setAlerts(result.data.alerts || []);
       updateBackground(result.data.current);
+
+      // Cache the data for offline use
+      cacheWeatherData(city, result.data);
 
       const userId = getUserId();
       if (userId) {
@@ -83,6 +121,20 @@ export default function Home() {
       }
     } catch (err: any) {
       setError(err.message || 'Failed to fetch weather');
+      
+      // Try to load cached data on error
+      const cached = getCachedWeatherData(city);
+      if (cached) {
+        setWeather(cached.current);
+        setForecast(cached.forecast || []);
+        setHourly(cached.hourly || []);
+        setUvi(cached.uvi || 0);
+        setAqi(cached.aqi);
+        setAqiComponents(cached.aqiComponents || null);
+        setAlerts(cached.alerts || []);
+        updateBackground(cached.current);
+        setError('Showing cached data (connection error)');
+      }
     } finally {
       setLoading(false);
     }
@@ -91,6 +143,14 @@ export default function Home() {
   async function fetchWeatherByCoords(lat: number, lon: number) {
     setLoading(true);
     setError('');
+
+    // Check if offline
+    if (!isOnline()) {
+      setError('No internet connection. Please try again later.');
+      setLoading(false);
+      return;
+    }
+
     try {
       const response = await fetch(`/api/weather?lat=${lat}&lon=${lon}`);
       const result = await response.json();
@@ -98,9 +158,15 @@ export default function Home() {
       
       setWeather(result.data.current);
       setForecast(result.data.forecast || []);
+      setHourly(result.data.hourly || []);
+      setUvi(result.data.uvi || 0);
       setAqi(result.data.aqi);
+      setAqiComponents(result.data.aqiComponents || null);
       setAlerts(result.data.alerts || []);
       updateBackground(result.data.current);
+
+      // Cache the data
+      cacheWeatherData(result.data.current.name, result.data);
 
       const userId = getUserId();
       if (userId) {
@@ -130,23 +196,24 @@ export default function Home() {
   }
 
   return (
-    <main className={`min-h-screen bg-gradient-to-br ${bgGradient} transition-all duration-1000 ease-in-out overflow-hidden`}>
+    <main className={`h-screen bg-gradient-to-br ${bgGradient} transition-all duration-1000 ease-in-out overflow-hidden`}>
       <ThemeToggle />
+      <OfflineIndicator />
       
-      <div className="h-screen flex flex-col p-4">
+      <div className="h-full flex flex-col px-3 py-2">
         
         {/* Header */}
-        <div className="text-center mb-3">
-          <h1 className="text-3xl font-thin text-white mb-0.5 tracking-tight">CloudCast</h1>
+        <div className="text-center mb-1.5">
+          <h1 className="text-xl font-thin text-white tracking-tight">CloudCast</h1>
           <p className="text-white/70 font-light text-xs">Your elegant weather companion</p>
         </div>
 
-        {/* Search Bar - Full Width */}
-        <div className="w-full max-w-2xl mx-auto mb-3">
+        {/* Search Bar */}
+        <div className="w-full max-w-xl mx-auto mb-2">
           <SearchBar onSearch={fetchWeather} isLoading={loading} />
         </div>
 
-        {/* Loading/Error States */}
+        {/* Loading State */}
         {loading && (
           <div className="flex-1 flex items-center justify-center">
             <div className="text-center">
@@ -156,7 +223,8 @@ export default function Home() {
           </div>
         )}
 
-        {error && (
+        {/* Error State */}
+        {error && !weather && (
           <div className="flex-1 flex items-center justify-center">
             <div className="backdrop-blur-xl bg-red-500/20 rounded-2xl p-4 border border-red-300/30 max-w-md">
               <p className="text-white text-center text-sm">{error}</p>
@@ -164,32 +232,67 @@ export default function Home() {
           </div>
         )}
 
-        {/* Main Content Grid - PROPERLY ALIGNED */}
+        {/* Main Content Grid */}
         {!loading && weather && (
-          <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-4 overflow-hidden max-w-6xl mx-auto w-full">
-            
-            {/* LEFT COLUMN - Main Weather + Favorites */}
-            <div className="flex flex-col gap-3 h-full overflow-y-auto custom-scrollbar pr-2">
-              {/* Weather Alerts */}
-              {alerts && alerts.length > 0 && <WeatherAlerts alerts={alerts} />}
+          <div className="flex-1 overflow-hidden">
+            <div className="h-full grid grid-cols-1 xl:grid-cols-12 gap-3 max-w-[1800px] mx-auto">
               
-              {/* Main Weather Card */}
-              <WeatherCard weather={weather} unit={unit} onToggleUnit={() => setUnit(u => u === 'C' ? 'F' : 'C')} />
-              
-              {/* Favorites */}
-              <FavoriteCities currentCity={weather.name} onCitySelect={fetchWeather} />
-            </div>
+              {/* LEFT COLUMN */}
+              <div className="xl:col-span-5 flex flex-col gap-2 h-full overflow-y-auto custom-scrollbar pr-3">
+                {/* Severe Weather Alerts */}
+                {alerts && alerts.length > 0 && <WeatherAlerts alerts={alerts} />}
+                
+                {/* Error/Warning Banner (if using cached data) */}
+                {error && weather && (
+                  <div className="backdrop-blur-xl bg-yellow-500/20 rounded-2xl p-2 border border-yellow-400/30">
+                    <p className="text-yellow-200 text-xs text-center">{error}</p>
+                  </div>
+                )}
+                
+                {/* Main Weather Card */}
+                <WeatherCard weather={weather} unit={unit} onToggleUnit={() => setUnit(u => u === 'C' ? 'F' : 'C')} />
+                
+                {/* Favorites */}
+                <FavoriteCities currentCity={weather.name} onCitySelect={fetchWeather} />
+              </div>
 
-            {/* RIGHT COLUMN - Additional Features */}
-            <div className="flex flex-col gap-3 h-full overflow-y-auto custom-scrollbar pr-2">
-              {/* 5-Day Forecast */}
-              {forecast && forecast.length > 0 && <ForecastCard forecast={forecast} unit={unit} />}
-              
-              {/* Sun Times */}
-              <SunTimes sunrise={weather.sys.sunrise} sunset={weather.sys.sunset} />
-              
-              {/* Air Quality */}
-              {aqi && <AirQuality aqi={aqi} />}
+              {/* RIGHT COLUMN */}
+              <div className="xl:col-span-7 flex flex-col gap-2 h-full overflow-y-auto custom-scrollbar pr-3">
+                {/* Rain Alert */}
+                <RainAlert hourly={hourly} />
+                
+                {/* Hourly Forecast */}
+                {hourly && hourly.length > 0 && <HourlyForecast hourly={hourly} unit={unit} />}
+                
+                {/* Two-Column Grid for Compact Features */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
+                  {/* UV & Heat Index */}
+                  <UVHeatIndex uvi={uvi} temp={weather.main.temp} humidity={weather.main.humidity} />
+                  
+                  {/* Air Quality with Pollutants */}
+                  {aqi && <AirQuality aqi={aqi} components={aqiComponents} />}
+                  
+                  {/* Wind Map */}
+                  <WindMap 
+                    windSpeed={weather.wind.speed} 
+                    windDeg={weather.wind.deg} 
+                    windGust={weather.wind.gust} 
+                  />
+                  
+                  {/* Sun Times */}
+                  <SunTimes sunrise={weather.sys.sunrise} sunset={weather.sys.sunset} />
+                </div>
+                
+                {/* Weather Radar - Full Width */}
+                <WeatherRadar 
+                  lat={weather.coord.lat} 
+                  lon={weather.coord.lon} 
+                  cityName={weather.name} 
+                />
+                
+                {/* 5-Day Forecast */}
+                {forecast && forecast.length > 0 && <ForecastCard forecast={forecast} unit={unit} />}
+              </div>
             </div>
           </div>
         )}
