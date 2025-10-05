@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import SearchBar from '@/components/SearchBar';
+// ... import all other components used in your UI ...
 import WeatherCard from '@/components/WeatherCard';
 import ThemeToggle from '@/components/ThemeToggle';
 import ForecastCard from '@/components/ForecastCard';
@@ -20,7 +21,6 @@ import { supabase, saveLastCity, getLastCity } from '@/lib/supabase';
 import { getUserId, getBackgroundGradient } from '@/lib/weatherUtils';
 import { cacheWeatherData, getCachedWeatherData, isOnline } from '@/lib/offlineCache';
 
-
 export default function Home() {
   const [weather, setWeather] = useState(null);
   const [forecast, setForecast] = useState([]);
@@ -31,17 +31,12 @@ export default function Home() {
   const [alerts, setAlerts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [unit, setUnit] = useState('C');
+  const [unit, setUnit] = useState<'C' | 'F'>('C');
   const [bgGradient, setBgGradient] = useState('from-blue-600 via-blue-700 to-indigo-800');
   const [pollenData, setPollenData] = useState({ 
-    overall: 0, 
-    tree: 0, 
-    grass: 0, 
-    weed: 0,
-    available: false,
-    source: 'unavailable'
+    overall: 0, tree: 0, grass: 0, weed: 0, available: false, source: 'unavailable'
   });
-
+  const [permissionState, setPermissionState] = useState<'prompt' | 'granted' | 'denied'>('prompt');
 
   useEffect(() => {
     async function initWeather() {
@@ -57,35 +52,116 @@ export default function Home() {
       } catch (err) {
         console.error('Error loading last city:', err);
       }
-      requestGeolocation();
+      await checkAndRequestLocation();
     }
     initWeather();
   }, []);
 
+  async function checkAndRequestLocation() {
+    if ('permissions' in navigator) {
+      try {
+        const result = await navigator.permissions.query({ name: 'geolocation' });
+        setPermissionState(result.state);
+        result.addEventListener('change', () => {
+          setPermissionState(result.state);
+          if (result.state === 'granted') requestGeolocation();
+        });
 
-  function requestGeolocation() {
-    if ('geolocation' in navigator) {
-      setLoading(true);
-      navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          await fetchWeatherByCoords(position.coords.latitude, position.coords.longitude);
-        },
-        (err) => {
-          setError('Location access denied. Please search for a city manually.');
-          setLoading(false);
+        if (result.state === 'granted' || result.state === 'prompt') {
+          requestGeolocation();
+        } else if (result.state === 'denied') {
+          setError('Location permission denied. Using approximate location based on IP address.');
+          await fetchWeatherByIP();
         }
-      );
+      } catch {
+        requestGeolocation();
+      }
     } else {
-      setError('Geolocation not supported. Please search for a city manually.');
+      requestGeolocation();
     }
   }
 
+  function requestGeolocation() {
+    if (!('geolocation' in navigator)) {
+      setError('Geolocation not supported by your browser.');
+      fetchWeatherByIP();
+      return;
+    }
+
+    setLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        setPermissionState('granted');
+        await fetchWeatherByCoords(position.coords.latitude, position.coords.longitude);
+      },
+      async (error) => {
+        handleGeolocationError(error);
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 }
+    );
+  }
+
+  async function handleGeolocationError(error) {
+    setLoading(false);
+    switch (error.code) {
+      case error.PERMISSION_DENIED:
+        setPermissionState('denied');
+        setError('Location access denied. Using approximate location based on IP address.');
+        await fetchWeatherByIP();
+        break;
+      case error.POSITION_UNAVAILABLE:
+        setError('Location information unavailable. Using IP-based location.');
+        await fetchWeatherByIP();
+        break;
+      case error.TIMEOUT:
+        setError('Location request timed out. Using IP-based location.');
+        await fetchWeatherByIP();
+        break;
+      default:
+        setError('Unable to retrieve location. Please search manually.');
+        break;
+    }
+  }
+
+  async function fetchWeatherByIP() {
+    if (!isOnline()) {
+      setError('No internet connection. Please try again later.');
+      return;
+    }
+    try {
+      setLoading(true);
+      const response = await fetch('/api/weather');
+      const result = await response.json();
+      if (!result.success) throw new Error(result.error);
+      setWeather(result.data.current);
+      setForecast(result.data.forecast || []);
+      setHourly(result.data.hourly || []);
+      setUvi(result.data.uvi || 0);
+      setAqi(result.data.aqi);
+      setAqiComponents(result.data.aqiComponents || null);
+      setAlerts(result.data.alerts || []);
+      setPollenData(result.data.pollen || pollenData);
+      updateBackground(result.data.current);
+      cacheWeatherData(result.data.current.name, result.data);
+      const userId = getUserId();
+      if (userId) {
+        await saveLastCity(userId, {
+          name: result.data.current.name,
+          country: result.data.current.sys.country,
+          lat: result.data.current.coord.lat,
+          lon: result.data.current.coord.lon,
+        });
+      }
+    } catch (err) {
+      setError(err.message || 'Failed to detect location');
+    } finally {
+      setLoading(false);
+    }
+  }
 
   async function fetchWeather(city: string) {
     setLoading(true);
     setError('');
-
-
     if (!isOnline()) {
       const cached = getCachedWeatherData(city);
       if (cached) {
@@ -107,13 +183,10 @@ export default function Home() {
         return;
       }
     }
-
-
     try {
       const response = await fetch(`/api/weather?city=${encodeURIComponent(city)}`);
       const result = await response.json();
       if (!result.success) throw new Error(result.error);
-      
       setWeather(result.data.current);
       setForecast(result.data.forecast || []);
       setHourly(result.data.hourly || []);
@@ -123,11 +196,7 @@ export default function Home() {
       setAlerts(result.data.alerts || []);
       setPollenData(result.data.pollen || pollenData);
       updateBackground(result.data.current);
-
-
       cacheWeatherData(city, result.data);
-
-
       const userId = getUserId();
       if (userId) {
         await saveLastCity(userId, {
@@ -137,9 +206,8 @@ export default function Home() {
           lon: result.data.current.coord.lon,
         });
       }
-    } catch (err: any) {
+    } catch (err) {
       setError(err.message || 'Failed to fetch weather');
-      
       const cached = getCachedWeatherData(city);
       if (cached) {
         setWeather(cached.current);
@@ -158,24 +226,18 @@ export default function Home() {
     }
   }
 
-
   async function fetchWeatherByCoords(lat: number, lon: number) {
     setLoading(true);
     setError('');
-
-
     if (!isOnline()) {
       setError('No internet connection. Please try again later.');
       setLoading(false);
       return;
     }
-
-
     try {
       const response = await fetch(`/api/weather?lat=${lat}&lon=${lon}`);
       const result = await response.json();
       if (!result.success) throw new Error(result.error);
-      
       setWeather(result.data.current);
       setForecast(result.data.forecast || []);
       setHourly(result.data.hourly || []);
@@ -185,11 +247,7 @@ export default function Home() {
       setAlerts(result.data.alerts || []);
       setPollenData(result.data.pollen || pollenData);
       updateBackground(result.data.current);
-
-
       cacheWeatherData(result.data.current.name, result.data);
-
-
       const userId = getUserId();
       if (userId) {
         await saveLastCity(userId, {
@@ -199,13 +257,12 @@ export default function Home() {
           lon: result.data.current.coord.lon,
         });
       }
-    } catch (err: any) {
+    } catch (err) {
       setError(err.message || 'Failed to fetch weather');
     } finally {
       setLoading(false);
     }
   }
-
 
   function updateBackground(weatherData: any) {
     const isDaytime = isDay(weatherData.sys.sunrise, weatherData.sys.sunset);
@@ -213,35 +270,23 @@ export default function Home() {
     setBgGradient(gradient);
   }
 
-
   function isDay(sunrise: number, sunset: number) {
     const now = Date.now() / 1000;
     return now >= sunrise && now <= sunset;
   }
 
-
   return (
     <main className={`min-h-screen bg-gradient-to-br ${bgGradient} transition-all duration-1000 ease-in-out flex flex-col`}>
       <ThemeToggle />
       <OfflineIndicator />
-      
-      {/* OPTIMIZED FULL-HEIGHT CONTAINER */}
       <div className="flex-1 flex flex-col px-4 py-4 max-w-[1800px] mx-auto w-full">
-        
-        {/* Compact Header */}
         <div className="text-center mb-3">
           <h1 className="text-3xl font-thin text-white tracking-tight text-readable">CloudCast</h1>
           <p className="text-white/90 font-light text-sm text-readable-subtle">Your elegant weather companion</p>
         </div>
-
-
-        {/* Compact Search Bar */}
         <div className="w-full max-w-3xl mx-auto mb-4">
           <SearchBar onSearch={fetchWeather} isLoading={loading} />
         </div>
-
-
-        {/* Loading State */}
         {loading && (
           <div className="flex-1 flex items-center justify-center">
             <div className="text-center">
@@ -250,9 +295,6 @@ export default function Home() {
             </div>
           </div>
         )}
-
-
-        {/* Error State */}
         {error && !weather && (
           <div className="flex-1 flex items-center justify-center">
             <div className="backdrop-blur-3xl bg-red-500/30 rounded-2xl p-6 border border-red-300/50 max-w-md">
@@ -260,54 +302,34 @@ export default function Home() {
             </div>
           </div>
         )}
-
-
-        {/* BALANCED 3-COLUMN LAYOUT */}
         {!loading && weather && (
           <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-4">
-            
-            {/* LEFT COLUMN - Main Weather + Travel (30%) */}
             <div className="flex flex-col gap-4 overflow-y-auto custom-scrollbar pr-2">
               {alerts && alerts.length > 0 && <WeatherAlerts alerts={alerts} />}
-              
               {error && weather && (
                 <div className="backdrop-blur-3xl bg-yellow-500/30 rounded-xl p-3 border border-yellow-400/50">
                   <p className="text-yellow-100 text-xs text-center text-readable-subtle">{error}</p>
                 </div>
               )}
-              
               <WeatherCard weather={weather} unit={unit} onToggleUnit={() => setUnit(u => u === 'C' ? 'F' : 'C')} />
-              
               <TravelMode onSelectCity={fetchWeather} />
-              
               <VoiceWeather weather={weather} unit={unit} />
             </div>
-
-
-            {/* MIDDLE COLUMN - Hourly + Details (35%) */}
             <div className="flex flex-col gap-4 overflow-y-auto custom-scrollbar pr-2">
               <RainAlert hourly={hourly} />
-              
               {hourly && hourly.length > 0 && <HourlyForecast hourly={hourly} unit={unit} />}
-              
               {pollenData.available && <PollenIndex data={pollenData} />}
-              
               <div className="grid grid-cols-2 gap-4">
                 <UVHeatIndex uvi={uvi} temp={weather.main.temp} humidity={weather.main.humidity} />
                 <AirQuality aqi={aqi} components={aqiComponents} />
               </div>
-              
               <div className="grid grid-cols-2 gap-4">
                 <WindMap windSpeed={weather.wind.speed} windDeg={weather.wind.deg} windGust={weather.wind.gust} />
                 <SunTimes sunrise={weather.sys.sunrise} sunset={weather.sys.sunset} />
               </div>
             </div>
-
-
-            {/* RIGHT COLUMN - Radar + Forecast (35%) */}
             <div className="flex flex-col gap-4 overflow-y-auto custom-scrollbar pr-2">
               <WeatherRadar lat={weather.coord.lat} lon={weather.coord.lon} cityName={weather.name} />
-              
               {forecast && forecast.length > 0 && <ForecastCard forecast={forecast} unit={unit} />}
             </div>
           </div>
