@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline';
+import { Icon } from '@iconify/react';
 
 const AQI_LEVELS: Record<number, { label: string; color: string; text: string; bg: string }> = {
   1: { label: 'Good', color: 'text-green-400', text: 'Air quality is excellent', bg: 'bg-green-500/20' },
@@ -44,9 +44,12 @@ export default function AirQuality({
       >
         <h3 className="text-white font-light text-sm">Air Quality</h3>
         {components && (
-          expanded ? 
-            <ChevronUpIcon className="w-4 h-4 text-white/60" /> : 
-            <ChevronDownIcon className="w-4 h-4 text-white/60" />
+          <Icon 
+            icon="lucide:chevron-down" 
+            className={`w-4 h-4 text-white/60 transition-transform duration-300 ease-in-out ${
+              expanded ? 'rotate-180' : 'rotate-0'
+            }`}
+          />
         )}
       </div>
 
