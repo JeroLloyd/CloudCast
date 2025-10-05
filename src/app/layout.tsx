@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -6,7 +6,11 @@ export const metadata: Metadata = {
   description: "Elegant cloud-based weather application with Apple-inspired design, real-time weather data, and persistent user preferences",
   keywords: ["weather", "forecast", "cloudcast", "weather app"],
   authors: [{ name: "CloudCast" }],
-  viewport: "width=device-width, initial-scale=1",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
 };
 
 export default function RootLayout({
