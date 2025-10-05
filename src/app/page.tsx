@@ -20,6 +20,7 @@ import { supabase, saveLastCity, getLastCity } from '@/lib/supabase';
 import { getUserId, getBackgroundGradient } from '@/lib/weatherUtils';
 import { cacheWeatherData, getCachedWeatherData, isOnline } from '@/lib/offlineCache';
 
+
 export default function Home() {
   const [weather, setWeather] = useState(null);
   const [forecast, setForecast] = useState([]);
@@ -41,6 +42,7 @@ export default function Home() {
     source: 'unavailable'
   });
 
+
   useEffect(() => {
     async function initWeather() {
       try {
@@ -60,6 +62,7 @@ export default function Home() {
     initWeather();
   }, []);
 
+
   function requestGeolocation() {
     if ('geolocation' in navigator) {
       setLoading(true);
@@ -77,9 +80,11 @@ export default function Home() {
     }
   }
 
+
   async function fetchWeather(city: string) {
     setLoading(true);
     setError('');
+
 
     if (!isOnline()) {
       const cached = getCachedWeatherData(city);
@@ -103,6 +108,7 @@ export default function Home() {
       }
     }
 
+
     try {
       const response = await fetch(`/api/weather?city=${encodeURIComponent(city)}`);
       const result = await response.json();
@@ -118,7 +124,9 @@ export default function Home() {
       setPollenData(result.data.pollen || pollenData);
       updateBackground(result.data.current);
 
+
       cacheWeatherData(city, result.data);
+
 
       const userId = getUserId();
       if (userId) {
@@ -150,15 +158,18 @@ export default function Home() {
     }
   }
 
+
   async function fetchWeatherByCoords(lat: number, lon: number) {
     setLoading(true);
     setError('');
+
 
     if (!isOnline()) {
       setError('No internet connection. Please try again later.');
       setLoading(false);
       return;
     }
+
 
     try {
       const response = await fetch(`/api/weather?lat=${lat}&lon=${lon}`);
@@ -175,7 +186,9 @@ export default function Home() {
       setPollenData(result.data.pollen || pollenData);
       updateBackground(result.data.current);
 
+
       cacheWeatherData(result.data.current.name, result.data);
+
 
       const userId = getUserId();
       if (userId) {
@@ -193,24 +206,27 @@ export default function Home() {
     }
   }
 
+
   function updateBackground(weatherData: any) {
     const isDaytime = isDay(weatherData.sys.sunrise, weatherData.sys.sunset);
     const gradient = getBackgroundGradient(weatherData.weather[0].main, isDaytime);
     setBgGradient(gradient);
   }
 
+
   function isDay(sunrise: number, sunset: number) {
     const now = Date.now() / 1000;
     return now >= sunrise && now <= sunset;
   }
 
+
   return (
-    <main className={`min-h-screen bg-gradient-to-br ${bgGradient} transition-all duration-1000 ease-in-out`}>
+    <main className={`min-h-screen bg-gradient-to-br ${bgGradient} transition-all duration-1000 ease-in-out flex flex-col`}>
       <ThemeToggle />
       <OfflineIndicator />
       
-      {/* OPTIMIZED CONTAINER */}
-      <div className="min-h-screen flex flex-col px-4 py-4 max-w-[1800px] mx-auto">
+      {/* OPTIMIZED FULL-HEIGHT CONTAINER */}
+      <div className="flex-1 flex flex-col px-4 py-4 max-w-[1800px] mx-auto w-full">
         
         {/* Compact Header */}
         <div className="text-center mb-3">
@@ -218,10 +234,12 @@ export default function Home() {
           <p className="text-white/90 font-light text-sm text-readable-subtle">Your elegant weather companion</p>
         </div>
 
+
         {/* Compact Search Bar */}
         <div className="w-full max-w-3xl mx-auto mb-4">
           <SearchBar onSearch={fetchWeather} isLoading={loading} />
         </div>
+
 
         {/* Loading State */}
         {loading && (
@@ -233,6 +251,7 @@ export default function Home() {
           </div>
         )}
 
+
         {/* Error State */}
         {error && !weather && (
           <div className="flex-1 flex items-center justify-center">
@@ -242,9 +261,10 @@ export default function Home() {
           </div>
         )}
 
+
         {/* BALANCED 3-COLUMN LAYOUT */}
         {!loading && weather && (
-          <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-4 max-h-[calc(100vh-180px)]">
+          <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-4">
             
             {/* LEFT COLUMN - Main Weather + Travel (30%) */}
             <div className="flex flex-col gap-4 overflow-y-auto custom-scrollbar pr-2">
@@ -262,6 +282,7 @@ export default function Home() {
               
               <VoiceWeather weather={weather} unit={unit} />
             </div>
+
 
             {/* MIDDLE COLUMN - Hourly + Details (35%) */}
             <div className="flex flex-col gap-4 overflow-y-auto custom-scrollbar pr-2">
@@ -282,6 +303,7 @@ export default function Home() {
               </div>
             </div>
 
+
             {/* RIGHT COLUMN - Radar + Forecast (35%) */}
             <div className="flex flex-col gap-4 overflow-y-auto custom-scrollbar pr-2">
               <WeatherRadar lat={weather.coord.lat} lon={weather.coord.lon} cityName={weather.name} />
@@ -294,4 +316,3 @@ export default function Home() {
     </main>
   );
 }
-
