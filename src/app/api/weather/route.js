@@ -54,7 +54,7 @@ export async function GET(request) {
     let alerts = [];
     
     try {
-      const oneCallUrl = `https://api.openweathermap.org/data/3.0/onecall?lat=${weatherLat}&lon=${weatherLon}&exclude=minutely,daily&appid=${API_KEY}`;
+      const oneCallUrl = `${BASE_URL}/onecall?lat=${weatherLat}&lon=${weatherLon}&exclude=minutely,daily&appid=${API_KEY}`;
       const oneCallResponse = await axios.get(oneCallUrl);
       
       hourlyData = oneCallResponse.data.hourly || [];
