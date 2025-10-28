@@ -12,10 +12,17 @@ export async function GET(request) {
     const lon = searchParams.get('lon');
 
     if (!city && (!lat || !lon)) {
-      return NextResponse.json(
-        { success: false, error: 'City name or coordinates required' },
-        { status: 400 }
-      );
+      // If no location provided, try to get location from IP
+      try {
+        const ipResponse = await axios.get('http://ip-api.com/json/');
+        lat = ipResponse.data.lat;
+        lon = ipResponse.data.lon;
+      } catch (ipError) {
+        return NextResponse.json(
+          { success: false, error: 'Could not determine location. Please search for a city or allow location access.' },
+          { status: 400 }
+        );
+      }
     }
 
     // Fetch current weather
