@@ -4,6 +4,14 @@ import axios from 'axios';
 const API_KEY = process.env.OPENWEATHER_API_KEY || process.env.NEXT_PUBLIC_OPENWEATHER_API_KEY;
 const BASE_URL = 'https://api.openweathermap.org/data/2.5';
 
+if (!API_KEY) {
+  console.error('OpenWeather API key is not configured');
+  return NextResponse.json(
+    { success: false, error: 'Weather API key is not configured' },
+    { status: 500 }
+  );
+}
+
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -33,6 +41,7 @@ export async function GET(request) {
       weatherUrl = `${BASE_URL}/weather?lat=${lat}&lon=${lon}&appid=${API_KEY}`;
     }
 
+    console.log('Requesting weather data from:', weatherUrl.replace(API_KEY, 'API_KEY_HIDDEN'));
     const weatherResponse = await axios.get(weatherUrl);
     const weatherData = weatherResponse.data;
 
