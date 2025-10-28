@@ -1,19 +1,20 @@
 import { NextResponse } from 'next/server';
 import axios from 'axios';
 
-const API_KEY = process.env.OPENWEATHER_API_KEY || process.env.NEXT_PUBLIC_OPENWEATHER_API_KEY;
 const BASE_URL = 'https://api.openweathermap.org/data/2.5';
-
-if (!API_KEY) {
-  console.error('OpenWeather API key is not configured');
-  return NextResponse.json(
-    { success: false, error: 'Weather API key is not configured' },
-    { status: 500 }
-  );
-}
 
 export async function GET(request) {
   try {
+    const API_KEY = process.env.OPENWEATHER_API_KEY || process.env.NEXT_PUBLIC_OPENWEATHER_API_KEY;
+    
+    if (!API_KEY) {
+      console.error('OpenWeather API key is not configured');
+      return NextResponse.json(
+        { success: false, error: 'Weather API key is not configured' },
+        { status: 500 }
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     const city = searchParams.get('city');
     let lat = searchParams.get('lat');
