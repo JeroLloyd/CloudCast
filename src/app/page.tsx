@@ -99,11 +99,16 @@ export default function Home() {
 
     setLoading(true);
     
-    // Single attempt with balanced settings for speed and accuracy
-    const geoOptions = {
+    const highAccuracyOptions = {
       enableHighAccuracy: true,
       timeout: 3000,        // Shorter timeout for faster response
       maximumAge: 30000    // Allow cached positions up to 30 seconds old
+    };
+
+    const fallbackOptions = {
+      enableHighAccuracy: false,
+      timeout: 5000,
+      maximumAge: 60000
     };
 
     // Use watchPosition instead of getCurrentPosition for better accuracy
@@ -129,11 +134,11 @@ export default function Home() {
         }
 
         // If accuracy is not good enough, start watching for better position
-        const watchId = navigator.geolocation.watchPosition(
+        const accuracyWatchId = navigator.geolocation.watchPosition(
           async (watchPosition) => {
             if (watchPosition.coords.accuracy <= 100) {
               await fetchWeatherByCoords(watchPosition.coords.latitude, watchPosition.coords.longitude);
-              navigator.geolocation.clearWatch(watchId);
+              navigator.geolocation.clearWatch(accuracyWatchId);
               setLoading(false);
             }
           },
