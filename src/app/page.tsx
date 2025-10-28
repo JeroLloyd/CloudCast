@@ -90,7 +90,7 @@ export default function Home() {
     }
   }
 
-  function requestGeolocation() {
+  function requestGeolocation(silent: boolean = false) {
     if (!('geolocation' in navigator)) {
       setError('Geolocation not supported by your browser.');
       fetchWeatherByIP();
