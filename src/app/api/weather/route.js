@@ -8,8 +8,8 @@ export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
     const city = searchParams.get('city');
-    const lat = searchParams.get('lat');
-    const lon = searchParams.get('lon');
+    let lat = searchParams.get('lat');
+    let lon = searchParams.get('lon');
 
     if (!city && (!lat || !lon)) {
       // If no location provided, try to get location from IP
