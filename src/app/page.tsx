@@ -106,7 +106,7 @@ export default function Home() {
     switch (error.code) {
       case error.PERMISSION_DENIED:
         setPermissionState('denied');
-        setError('Location access denied. Using approximate location based on IP address.');
+        setError('Location access denied. Please ensure you are using HTTPS and have allowed location access.');
         await fetchWeatherByIP();
         break;
       case error.POSITION_UNAVAILABLE:
@@ -118,6 +118,7 @@ export default function Home() {
         await fetchWeatherByIP();
         break;
       default:
+        console.error('Geolocation error:', error);
         setError('Unable to retrieve location. Please search manually.');
         break;
     }
