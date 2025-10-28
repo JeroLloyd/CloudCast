@@ -99,27 +99,20 @@ export default function Home() {
 
     setLoading(true);
     
-    // First try high accuracy with a short timeout
-    const highAccuracyOptions = {
+    // Single attempt with balanced settings for speed and accuracy
+    const geoOptions = {
       enableHighAccuracy: true,
-      timeout: 5000,
-      maximumAge: 0
+      timeout: 3000,        // Shorter timeout for faster response
+      maximumAge: 30000    // Allow cached positions up to 30 seconds old
     };
 
-    // Fallback options with lower accuracy but more likely to succeed
-    const fallbackOptions = {
-      enableHighAccuracy: false,
-      timeout: 10000,
-      maximumAge: 0
-    };
-
-    // Try high accuracy first
-    navigator.geolocation.getCurrentPosition(
+    // Use watchPosition instead of getCurrentPosition for better accuracy
+    const watchId = navigator.geolocation.watchPosition(
       async (position) => {
         setPermissionState('granted');
         const { latitude, longitude, accuracy } = position.coords;
         
-        // Cache the accurate position
+        // Cache the position
         localStorage.setItem('lastKnownPosition', JSON.stringify({
           latitude,
           longitude,
@@ -127,8 +120,9 @@ export default function Home() {
         }));
         localStorage.setItem('lastKnownPositionTime', Date.now().toString());
         
-        // If accuracy is good enough, use this position
-        if (accuracy <= 100) { // accuracy in meters
+        // Use any position with reasonable accuracy
+        if (accuracy <= 1000) { // More lenient accuracy requirement
+          navigator.geolocation.clearWatch(watchId);
           await fetchWeatherByCoords(latitude, longitude);
           setLoading(false);
           return;
@@ -316,40 +310,92 @@ export default function Home() {
   }
 
   async function fetchWeatherByCoords(lat: number, lon: number) {
+    const abortController = new AbortController();
+    const timeoutId = setTimeout(() => abortController.abort(), 5000); // 5 second timeout
+
     setLoading(true);
     setError('');
-    if (!isOnline()) {
-      setError('No internet connection. Please try again later.');
-      setLoading(false);
-      return;
-    }
-    try {
-      const response = await fetch(`/api/weather?lat=${lat}&lon=${lon}`);
-      const result = await response.json();
-      if (!result.success) throw new Error(result.error);
-      setWeather(result.data.current);
-      setForecast(result.data.forecast || []);
-      setHourly(result.data.hourly || []);
-      setUvi(result.data.uvi || 0);
-      setAqi(result.data.aqi);
-      setAqiComponents(result.data.aqiComponents || null);
-      setAlerts(result.data.alerts || []);
-      setPollenData(result.data.pollen || pollenData);
-      updateBackground(result.data.current);
-      cacheWeatherData(result.data.current.name, result.data);
-      const userId = getUserId();
-      if (userId) {
-        await saveLastCity(userId, {
-          name: result.data.current.name,
-          country: result.data.current.sys.country,
-          lat: result.data.current.coord.lat,
-          lon: result.data.current.coord.lon,
-        });
+
+    // Round coordinates to 6 decimal places for consistency
+    lat = Number(lat.toFixed(6));
+    lon = Number(lon.toFixed(6));
+
+    // Check for cached data first
+    const cacheKey = `weather_${lat}_${lon}`;
+    const cachedData = localStorage.getItem(cacheKey);
+    if (cachedData) {
+      const cached = JSON.parse(cachedData);
+      if (Date.now() - cached.timestamp < 300000) { // 5 minutes cache
+        setWeather(cached.data.current);
+        setForecast(cached.data.forecast || []);
+        setHourly(cached.data.hourly || []);
+        setUvi(cached.data.uvi || 0);
+        setAqi(cached.data.aqi);
+        setAqiComponents(cached.data.aqiComponents || null);
+        setAlerts(cached.data.alerts || []);
+        setPollenData(cached.data.pollen || pollenData);
+        updateBackground(cached.data.current);
+        setLoading(false);
+        // Fetch fresh data in background
+        fetchFreshData();
+        return;
       }
-    } catch (err) {
-      setError(err.message || 'Failed to fetch weather');
-    } finally {
-      setLoading(false);
+    }
+
+    await fetchFreshData();
+
+    async function fetchFreshData() {
+      if (!isOnline()) {
+        setError('No internet connection. Please try again later.');
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const response = await fetch(
+          `/api/weather?lat=${lat}&lon=${lon}`,
+          { signal: abortController.signal }
+        );
+        const result = await response.json();
+        
+        clearTimeout(timeoutId);
+        
+        if (!result.success) throw new Error(result.error);
+        
+        // Cache the results
+        localStorage.setItem(cacheKey, JSON.stringify({
+          timestamp: Date.now(),
+          data: result.data
+        }));
+
+        setWeather(result.data.current);
+        setForecast(result.data.forecast || []);
+        setHourly(result.data.hourly || []);
+        setUvi(result.data.uvi || 0);
+        setAqi(result.data.aqi);
+        setAqiComponents(result.data.aqiComponents || null);
+        setAlerts(result.data.alerts || []);
+        setPollenData(result.data.pollen || pollenData);
+        updateBackground(result.data.current);
+
+        const userId = getUserId();
+        if (userId) {
+          await saveLastCity(userId, {
+            name: result.data.current.name,
+            country: result.data.current.sys.country,
+            lat: result.data.current.coord.lat,
+            lon: result.data.current.coord.lon,
+          });
+        }
+      } catch (err) {
+        if (err.name === 'AbortError') {
+          setError('Weather data request timed out. Please try again.');
+        } else {
+          setError(err.message || 'Failed to fetch weather');
+        }
+      } finally {
+        setLoading(false);
+      }
     }
   }
 
