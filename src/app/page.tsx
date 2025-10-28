@@ -40,44 +40,53 @@ export default function Home() {
 
   useEffect(() => {
     async function initWeather() {
-      try {
-        const userId = getUserId();
-        if (userId) {
-          const lastCity = await getLastCity(userId);
-          if (lastCity?.last_city) {
-            await fetchWeather(lastCity.last_city);
-            return;
-          }
-        }
-      } catch (err) {
-        console.error('Error loading last city:', err);
-      }
+      // Always try to get current location first
       await checkAndRequestLocation();
     }
     initWeather();
   }, []);
 
   async function checkAndRequestLocation() {
+    // First check if we have a cached position that's very recent (within last minute)
+    const cachedPosition = localStorage.getItem('lastKnownPosition');
+    const cachedTimestamp = localStorage.getItem('lastKnownPositionTime');
+    
+    if (cachedPosition && cachedTimestamp) {
+      const position = JSON.parse(cachedPosition);
+      const timestamp = parseInt(cachedTimestamp);
+      
+      // Use cached position if it's less than 1 minute old
+      if (Date.now() - timestamp < 60000) {
+        await fetchWeatherByCoords(position.latitude, position.longitude);
+        // Still request new position in background
+        requestGeolocation(true);
+        return;
+      }
+    }
+
     if ('permissions' in navigator) {
       try {
         const result = await navigator.permissions.query({ name: 'geolocation' });
         setPermissionState(result.state);
+        
+        // Listen for permission changes
         result.addEventListener('change', () => {
           setPermissionState(result.state);
-          if (result.state === 'granted') requestGeolocation();
+          if (result.state === 'granted') requestGeolocation(false);
         });
 
         if (result.state === 'granted' || result.state === 'prompt') {
-          requestGeolocation();
+          requestGeolocation(false);
         } else if (result.state === 'denied') {
-          setError('Location permission denied. Using approximate location based on IP address.');
+          setError('Location access denied. Please enable location services for more accurate weather data.');
           await fetchWeatherByIP();
         }
-      } catch {
-        requestGeolocation();
+      } catch (error) {
+        console.error('Permission query failed:', error);
+        requestGeolocation(false);
       }
     } else {
-      requestGeolocation();
+      requestGeolocation(false);
     }
   }
 
@@ -89,37 +98,116 @@ export default function Home() {
     }
 
     setLoading(true);
+    
+    // First try high accuracy with a short timeout
+    const highAccuracyOptions = {
+      enableHighAccuracy: true,
+      timeout: 5000,
+      maximumAge: 0
+    };
+
+    // Fallback options with lower accuracy but more likely to succeed
+    const fallbackOptions = {
+      enableHighAccuracy: false,
+      timeout: 10000,
+      maximumAge: 0
+    };
+
+    // Try high accuracy first
     navigator.geolocation.getCurrentPosition(
       async (position) => {
         setPermissionState('granted');
-        await fetchWeatherByCoords(position.coords.latitude, position.coords.longitude);
+        const { latitude, longitude, accuracy } = position.coords;
+        
+        // Cache the accurate position
+        localStorage.setItem('lastKnownPosition', JSON.stringify({
+          latitude,
+          longitude,
+          accuracy
+        }));
+        localStorage.setItem('lastKnownPositionTime', Date.now().toString());
+        
+        // If accuracy is good enough, use this position
+        if (accuracy <= 100) { // accuracy in meters
+          await fetchWeatherByCoords(latitude, longitude);
+          setLoading(false);
+          return;
+        }
+
+        // If accuracy is not good enough, start watching for better position
+        const watchId = navigator.geolocation.watchPosition(
+          async (watchPosition) => {
+            if (watchPosition.coords.accuracy <= 100) {
+              await fetchWeatherByCoords(watchPosition.coords.latitude, watchPosition.coords.longitude);
+              navigator.geolocation.clearWatch(watchId);
+              setLoading(false);
+            }
+          },
+          null,
+          highAccuracyOptions
+        );
+
+        // Stop watching after 10 seconds if we haven't got a better position
+        setTimeout(() => {
+          navigator.geolocation.clearWatch(watchId);
+          setLoading(false);
+        }, 10000);
       },
-      async (error) => {
-        handleGeolocationError(error);
+      async () => {
+        // If high accuracy fails, try with lower accuracy
+        navigator.geolocation.getCurrentPosition(
+          async (position) => {
+            setPermissionState('granted');
+            await fetchWeatherByCoords(position.coords.latitude, position.coords.longitude);
+            setLoading(false);
+          },
+          async (error) => {
+            handleGeolocationError(error);
+            setLoading(false);
+          },
+          fallbackOptions
+        );
       },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 }
+      highAccuracyOptions
     );
   }
 
   async function handleGeolocationError(error) {
     setLoading(false);
+    
+    // Check if we have a recent cached position we can use
+    const cachedPosition = localStorage.getItem('lastKnownPosition');
+    const cachedTimestamp = localStorage.getItem('lastKnownPositionTime');
+    
+    if (cachedPosition && cachedTimestamp) {
+      const position = JSON.parse(cachedPosition);
+      const timestamp = parseInt(cachedTimestamp);
+      
+      // Use cached position if it's less than 5 minutes old
+      if (Date.now() - timestamp < 300000) {
+        console.log('Using cached position due to error:', error);
+        await fetchWeatherByCoords(position.latitude, position.longitude);
+        return;
+      }
+    }
+
     switch (error.code) {
       case error.PERMISSION_DENIED:
         setPermissionState('denied');
-        setError('Location access denied. Please ensure you are using HTTPS and have allowed location access.');
+        setError('Please enable location access in your browser settings for accurate local weather.');
         await fetchWeatherByIP();
         break;
       case error.POSITION_UNAVAILABLE:
-        setError('Location information unavailable. Using IP-based location.');
+        setError('Unable to detect precise location. Please check your device\'s location settings.');
         await fetchWeatherByIP();
         break;
       case error.TIMEOUT:
-        setError('Location request timed out. Using IP-based location.');
+        setError('Location detection took too long. Please try again or check your connection.');
         await fetchWeatherByIP();
         break;
       default:
         console.error('Geolocation error:', error);
-        setError('Unable to retrieve location. Please search manually.');
+        setError('Location detection failed. Please ensure location services are enabled.');
         break;
     }
   }
